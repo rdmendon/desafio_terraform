@@ -1,4 +1,6 @@
 README
+A Infra funcionou, para executar, descompacte o terraform.war (o .exe não consegui enviar) execute o terraform init, terraform plan e terraform apply
+
 A Infra não esta funcionando, infelizmente. Vou partir para o Vagrant.
 Segue abaixo os passos e o que compões a infra.
 A infra é composta de 3 arquivos, main.tf, var.tf e security-group.tf, docker.sh e app.sh. A chave de conexão usada é a desafio-aws2
