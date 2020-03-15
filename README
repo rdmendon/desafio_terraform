@@ -1,0 +1,69 @@
+README
+A Infra não esta funcionando, infelizmente. Vou partir para o Vagrant.
+Segue abaixo os passos e o que compões a infra.
+A infra é composta de 3 arquivos, main.tf, var.tf e security-group.tf, docker.sh e app.sh. A chave de conexão usada é a desafio-aws2
+
+A ideia que tive foi criar uma infraestrutura básica onde, no momento da criação eu instalaria e realizaria as atualizações necessárias no servidor, clonaria o git da aplicação,
+executaria a imagem do docker e realizaria o deploy da aplicação (imagem).
+
+Passo a passo:
+* Criação de uma instancia AWS para pegar e testar todos os comandos utilizados nos scripts (docker.sh e app.sh), este passo foi um sucesso pois pude atualizar tudo e rodar a app.
+* Criação da estrutura de criação de instancias AWS (main.tf, var.tf e security-group.tf) Este passo também resultou em sucesso, criei o servidor como gostaria.
+* Ajuste do script para inserir os scripts docker.sh e app.sh. Este passo considero um fracasso. Os pontos estão listados abaixo:
+
+Desafios encontrados.
+* Mesmo com o security groups me retornando o sucesso nas portas 22 e 5000, o mesmo não criava com estas configurações, impedindo o acesso ssh (log abaixo)
+aws_instance.desafio: Destroying... (ID: i-0eb7c9f77f57a9d3e)
+aws_security_group.acesso-ssh: Modifying... (ID: sg-09dde37d2704ebfa0)
+  ingress.#:                             "0" => "2"
+  ingress.3457728489.cidr_blocks.#:      "0" => "0"
+  ingress.3457728489.description:        "" => ""
+  ingress.3457728489.from_port:          "" => "22"
+  ingress.3457728489.ipv6_cidr_blocks.#: "0" => "0"
+  ingress.3457728489.prefix_list_ids.#:  "0" => "0"
+  ingress.3457728489.protocol:           "" => "tcp"
+  ingress.3457728489.security_groups.#:  "0" => "0"
+  ingress.3457728489.self:               "" => "false"
+  ingress.3457728489.to_port:            "" => "22"
+  ingress.770996204.cidr_blocks.#:       "0" => "0"
+  ingress.770996204.description:         "" => ""
+  ingress.770996204.from_port:           "" => "5000"
+  ingress.770996204.ipv6_cidr_blocks.#:  "0" => "0"
+  ingress.770996204.prefix_list_ids.#:   "0" => "0"
+  ingress.770996204.protocol:            "" => "tcp"
+  ingress.770996204.security_groups.#:   "0" => "0"
+  ingress.770996204.self:                "" => "false"
+  ingress.770996204.to_port:             "" => "5000"
+  
+  Este problema é facilmente resolvido pela parte grafica da AWS, apesar de não ideal, serve como WA.
+  OBS: Consultei meus códigos antigos, consultei a documentação do terraform, internet e simplesmente não entendi o motivo.
+  
+				OBS 15/03/2020 as 13:49: Após pegar uma estrutura de criação como exemplo, o servidor foi criado com as portas liberadas
+  
+  * O maior problema, foi integrar os dois scripts ao codigo principal. Neste ponto tive diversos problemas e tentei diversas soluções:
+	* provisioner file - Este passo chama o script e toma timeout (5 min) mas não mostra o problema. Tentei diversos ajustes sem sucesso.
+	* provisioner remote exec - Este passo executa o comando em linha, com ele consegui detectar que o problema era a conexão ssh com o servidor criado. Após esta análise tentei
+	encontrar uma maneira de fazer a conexão. Encontrei uma maneira de conectar através de private key e encontrei outro problema.
+	* não possuo conhecimento suficiente para enviar a private key do meu diretório para o servidor que acabou de subir, mas o erro abaixo indica que a tentativa funcionou:
+	Error: Error applying plan:
+
+1 error occurred:
+        * aws_instance.desafio: Failed to read key "PuTTY-User-Key-File-2: ssh-rsa\r\nEncryption: none\r\nComment: imported-openssh-key\r\nPublic-Lines: 6\r\nAAAAB3NzaC1yc2EAAAADAQABAAABAQCH11Z+rlTZD4avjaECDtrLFwOiupE9OQzI\r\nWQlqIyFhwj/ym90bB/NfextWJcD9r06TxC+KMFV94pt02aHq74Qy6j8NHSCUn1U4\r\nekZRDLE9ddVwg6pqiOy8qpnn14qNcY3cYrKiajqWu5JDqQ0f7GK8pmehVby7TQgH\r\n9EuA+M5/ruyMePvhsTKCmOpyyxp8+Y4ZpD1ic6xruSZN80Fmz/X2qjcqE2lQj2ip\r\n92B932YZvKlg4N9sXw5IcAqggzAGuTorMJeZ43arBz9PCDHQZGAIbf61F4rO4oeM\r\nYv+TeHBSHqqPa0u9HMGUKIaMBXhhdkq9zoCqOOElPJ8B8BwFeZ5t\r\nPrivate-Lines: 14\r\nAAABAGw4RsVHt3rx3pgvWe0cznvris7ymVDQCXn3TQPMlwSdz3pFaAHn9KDFn8Ki\r\n8zxnlE8uhb0uwn02siiGVXOoe4Zgjfixkso0oZ0L9McPOIjBPliT3IlhKlEoDNLi\r\nKZSDucOwsaWowaJiLqVOoZEkLokifP7QIjqJpPNJUXmfPkwDayA9+XOEkyyigjIK\r\nOwEpm3NiJG3uCKFcwK1UmNu+4CfjPQF0pi8UqoQ8O/vTj0ICHgIgvoy6MlpXLzk7\r\n5B9lqqjLTvOjQHurJyLYQwkDy8c0LqNm6wX3neba/guz6/Syh/0jk8yvtQ10JjOE\r\nPufAH7PEubHYscuakoP9AJvO67UAAACBAOw7CZ9r4z+RO6dlX3EOzZNtWZp79EGt\r\ngVLWcGZgyvT2Eivh6yaFyb1zX1YSd4F+UMEJeG2hKRmFC0Bz5qaq4bIw/kI+XrvG\r\npSa6GCW7DIMt/e0omyWlmSVKQksICgtaUcH8LF21Rb+oYlI0lhf7yrjgw6DgA+8O\r\n/tlEFMMS/lwrAAAAgQCTNZMbW7Ro6tCxhffUMGdGd2hnisgMyU1imF71XJnp/Ooj\r\neIOeZkg80tH+x3NZ7/1gBaEIoMemGpHT3aUqFqn5tZJklQbiaEGLdVv3gNxqlGkl\r\nYlmjqudtv8HxI8DtKl6UIltq509HZzc6uON1Eaiwe/3g4+mL2WQZmlct5K5rxwAA\r\nAH9HKAneLq3teLkzB9dkour7qEXH1BZ9jhxEvAuDDnf3O1IN2ICjnd6FMyb7TcJQ\r\naal5VJHjimnH6HPVH1HFyoOz7haxnablTnDvvt3nEYyDo+PYwUcC6TwfoSrXVcR9\r\nJWQKAgtZaOuUHnpI2vs9H179H83DzB3Y/9Zl52q4mcJu\r\nPrivate-MAC: 2a90c4dddc139e849bd7831e69c00eb9ddd0f186\r\n": no key found
+				OBS 15/03/2020 as 16:00: Após muito esforço consegui integrar os scripts e a aplicação buildou com sucesso.
+
+Desafios que me fizeram parar o terraform por hora:
+* Dificuldade de encontrar informações para os problemas encontrados.
+* Meu maior problema é não ter com quem conversar sobre o assunto, não conheço ninguém que conheça terraform e possa me ajudar nestas questões.
+
+Resultado: Infelizmente não pude cumprir o combinado, apesar de achar que cheguei bem perto disto, muito devido a falta de informação (tanto com pessoas quanto na internet). 
+Estou desde sexta feira 13/03 desenhando a solução para isto e hoje (14/03 as 10:30) cheguei a conclusão de que apesar de estar perto, posso não conseguir terminar com o Terraform com
+os conhecimentos que tenho.
+
+Solução Prevista.
+* Estou começando a fazer agora um curso de vagrant (linux academy), conheço mais pessoas que possam me auxiliar nesta ferramenta.
+		OBS 15/03/2020 18:16: As soluções de Vagrant e Terraform foram desenvolvidas da melhor maneira que meu conhecimento me permitia. Sei que não é o ideal mas foi um grande
+		aprendizado até o momento, se não for muito incomodo, me informe os pontos com problemas e como posso fazer para melhora-los, independente do resultado, foi um grande aprendizado.
+		
+Obrigado
+
+OBS final: A conexão direta com ssh ao servidor criado começou a falhar, testei via putty com a desafio-aws2.ppk e funcionou.
